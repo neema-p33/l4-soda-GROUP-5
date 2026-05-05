@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat App | Capstone Project</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- Main App Wrapper -->
+<main class="chat-app">
+
+    <!-- HEADER -->
+    <header class="chat-header">
+
+        <div class="user-info">
+            <div class="avatar" aria-label="User Avatar">👩</div>
+
+            <div class="user-details">
+                <h1 class="chat-title">Real-Time Chat</h1>
+                <p class="chat-status">● Online</p>
+            </div>
+        </div>
+
+    </header>
+
+    <!-- CHAT AREA -->
+    <section class="chat-body">
+
+        <!-- Typing indicator (backend controlled) -->
+        <div id="typing" class="typing-indicator" aria-live="polite"></div>
+
+        <!-- Messages container -->
+        <ul id="messages" class="messages-list" aria-live="polite">
+            <!-- Messages will be inserted here dynamically -->
+        </ul>
+
+    </section>
+
+    <!-- INPUT AREA -->
+    <footer class="chat-footer">
+
+        <form id="form" class="chat-form">
+
+            <!-- Message input -->
+            <input
+                id="input"
+                type="text"
+                class="chat-input"
+                placeholder="Type your message..."
+                autocomplete="off"
+                required
+                aria-label="Message input"
+            />
+
+            <!-- Send button -->
+            <button type="submit" class="send-btn" aria-label="Send message">
+                ➤
+            </button>
+
+        </form>
+
+    </footer>
+
+</main>
+
+<!-- Socket.IO (DO NOT REMOVE) -->
+<script src="/socket.io/socket.io.js"></script>
+
+<!-- App Logic -->
+<script src="script.js"></script>
+
+</body>
+</html>
