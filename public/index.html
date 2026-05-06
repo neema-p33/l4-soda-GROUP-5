@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexChat — Real-Time Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ══════════════════════════════════
+       CSS Variables & Reset
+    ══════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #13161e;
+      --surface2:  #1a1e28;
+      --surface3:  #222738;
+      --border:    #2a2f42;
+      --accent:    #5b8af0;
+      --accent2:   #3ecf8e;
+      --danger:    #f05b7a;
+      --text:      #e8eaf2;
+      --text-muted:#7a80a0;
+      --text-dim:  #4a5068;
+      --radius:    12px;
+      --radius-sm: 6px;
+      --shadow:    0 8px 32px rgba(0,0,0,0.45);
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════════
+       JOIN MODAL
+    ══════════════════════════════════ */
+    #join-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.4s ease;
+    }
+
+    #join-overlay.hidden { display: none; }
+
+    .join-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow), 0 0 80px rgba(91,138,240,0.08);
+      animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .join-logo {
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .join-logo span { color: var(--accent); }
+
+    .join-tagline {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 36px;
+      font-weight: 300;
+    }
+
+    .join-card label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .join-card input, .join-card select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .join-card input:focus, .join-card select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(91,138,240,0.15);
+    }
+
+    .join-card select option { background: var(--surface2); }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-dim);
+      font-size: 12px;
+      margin: -8px 0 20px;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .join-card input.room-custom {
+      margin-top: 10px;
+    }
+
+    #join-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      margin-top: 8px;
+    }
+
+    #join-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    #join-btn:active { transform: translateY(0); }
+
+    .join-error {
+      background: rgba(240,91,122,0.12);
+      border: 1px solid rgba(240,91,122,0.3);
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      font-size: 13px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ══════════════════════════════════
+       MAIN CHAT LAYOUT
+    ══════════════════════════════════ */
+    #app {
+      display: none;
+      height: 100vh;
+      grid-template-columns: 240px 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    #app.visible { display: grid; }
+
+    /* ── Sidebar ─────────────────────── */
+    #sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo {
+      font-family: var(--font-head);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .sidebar-logo span { color: var(--accent); }
+
+    .room-badge {
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(91,138,240,0.12);
+      border: 1px solid rgba(91,138,240,0.25);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .room-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: pulse 2s infinite;
+    }
+
+    .sidebar-section {
+      padding: 16px 20px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    #user-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 12px 12px;
+    }
+
+    #user-list::-webkit-scrollbar { width: 4px; }
+    #user-list::-webkit-scrollbar-track { background: transparent; }
+    #user-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: background 0.15s;
+    }
+
+    .user-item:hover { background: var(--surface2); }
+
+    .user-item.is-me { color: var(--text); font-weight: 500; }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-head);
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #leave-btn {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #leave-btn:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(240,91,122,0.06);
+    }
+
+    /* ── Main Chat Panel ─────────────── */
+    #chat-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #chat-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-room-name {
+      font-family: var(--font-head);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .chat-room-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .online-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--accent2);
+      font-weight: 500;
+    }
+
+    .online-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--accent2);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    /* ── Messages ────────────────────── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #messages::-webkit-scrollbar { width: 5px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* System messages */
+    .msg-system {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 10px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .msg-system::before, .msg-system::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Chat messages */
+    .msg-group {
+      display: flex;
+      flex-direction: column;
+      max-width: 72%;
+      animation: msgIn 0.2s ease;
+    }
+
+    .msg-group.own { align-self: flex-end; align-items: flex-end; }
+    .msg-group.other { align-self: flex-start; align-items: flex-start; }
+
+    .msg-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 5px;
+      padding: 0 4px;
+    }
+
+    .msg-group.own .msg-meta { flex-direction: row-reverse; }
+
+    .msg-username {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-head);
+    }
+
+    .msg-time {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 300;
+    }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14.5px;
+      line-height: 1.55;
+      word-break: break-word;
+      max-width: 100%;
+    }
+
+    .msg-group.own .msg-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-group.other .msg-bubble {
+      background: var(--surface3);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Consecutive messages (no extra meta) */
+    .msg-group + .msg-group.own { margin-top: 10px; }
+    .msg-group + .msg-group.other { margin-top: 10px; }
+
+    /* Spacing after system messages */
+    .msg-system + .msg-group { margin-top: 6px; }
+
+    /* ── Typing Indicator ────────────── */
+    #typing-bar {
+      padding: 6px 24px 2px;
+      height: 26px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      flex-shrink: 0;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 3px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    .typing-dots span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ── Input Bar ───────────────────── */
+    #input-area {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px 4px 4px 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-row:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(91,138,240,0.12);
+    }
+
+    #msg-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14.5px;
+      padding: 10px 0;
+      resize: none;
+    }
+
+    #msg-input::placeholder { color: var(--text-dim); }
+
+    #send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    #send-btn:hover { opacity: 0.85; transform: scale(1.05); }
+    #send-btn:active { transform: scale(0.97); }
+
+    #send-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    .input-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: right;
+      margin-top: 8px;
+    }
+
+    /* ══════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════ */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40%            { transform: translateY(-5px); }
+    }
+
+    /* ══════════════════════════════════
+       MOBILE RESPONSIVE
+    ══════════════════════════════════ */
+    @media (max-width: 640px) {
+      #app.visible { grid-template-columns: 1fr; }
+      #sidebar { display: none; }
+      .msg-group { max-width: 90%; }
+    }
+
+    /* ══════════════════════════════════
+       SCROLLBAR GLOBAL
+    ══════════════════════════════════ */
+    * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════
+       JOIN OVERLAY
+  ══════════════════════════════════════ -->
+  <div id="join-overlay">
+    <div class="join-card">
+      <div class="join-logo">Nex<span>Chat</span></div>
+      <div class="join-tagline">Real-time messaging — no accounts, no delays</div>
+
+      <label for="username-input">Your name</label>
+      <input
+        id="username-input"
+        type="text"
+        placeholder="e.g. Alex"
+        maxlength="20"
+        autocomplete="off"
+      />
+
+      <label for="room-select">Choose a room</label>
+      <select id="room-select">
+        <option value="">— pick a room —</option>
+        <option value="General">💬 General</option>
+        <option value="Tech">💻 Tech</option>
+        <option value="Random">🎲 Random</option>
+        <option value="custom">✏️  Custom room…</option>
+      </select>
+
+      <div class="or-divider" id="custom-divider" style="display:none;">or type below</div>
+      <input
+        id="custom-room-input"
+        class="room-custom"
+        type="text"
+        placeholder="Room name"
+        maxlength="30"
+        style="display:none;"
+        autocomplete="off"
+      />
+
+      <button id="join-btn">Join Chat →</button>
+      <div class="join-error" id="join-error">Please enter a name and choose a room.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       MAIN APP
+  ══════════════════════════════════════ -->
+  <div id="app">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">Nex<span>Chat</span></div>
+        <div class="room-badge">
+          <span class="room-dot"></span>
+          <span id="sidebar-room-name">General</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">Online — <span id="online-count">0</span></div>
+      <div id="user-list"></div>
+
+      <div class="sidebar-footer">
+        <button id="leave-btn">← Leave room</button>
+      </div>
+    </aside>
+
+    <!-- Chat Panel -->
+    <section id="chat-panel">
+      <div id="chat-header">
+        <div class="chat-header-left">
+          <div>
+            <div class="chat-room-name" id="header-room-name">General</div>
+            <div class="chat-room-count" id="header-user-count">0 online</div>
+          </div>
+        </div>
+        <div class="online-indicator">
+          <span class="online-dot"></span> Live
+        </div>
+      </div>
+
+      <div id="messages"></div>
+
+      <div id="typing-bar"></div>
+
+      <div id="input-area">
+        <div class="input-row">
+          <input
+            id="msg-input"
+            type="text"
+            placeholder="Type a message…"
+            maxlength="500"
+            autocomplete="off"
+          />
+          <button id="send-btn" title="Send">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-hint">Enter to send</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    // ──────────────────────────────────────────────
+    // State
+    // ──────────────────────────────────────────────
+    const socket = io();
+
+    let myUsername = '';
+    let myRoom     = '';
+    let typingTimer = null;
+    let isTyping    = false;
+
+    // Avatar color palette
+    const AVATAR_COLORS = [
+      ['#5b8af0','#1a3066'],['#3ecf8e','#0e3d24'],['#f05b7a','#3d0e1a'],
+      ['#f0a05b','#3d260e'],['#a05bf0','#26103d'],['#5bf0e0','#0e3d38'],
+    ];
+
+    function getAvatarColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+    }
+
+    function formatTime(iso) {
+      const d = new Date(iso);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ──────────────────────────────────────────────
+    // DOM refs
+    // ──────────────────────────────────────────────
+    const joinOverlay       = document.getElementById('join-overlay');
+    const app               = document.getElementById('app');
+    const usernameInput     = document.getElementById('username-input');
+    const roomSelect        = document.getElementById('room-select');
+    const customRoomInput   = document.getElementById('custom-room-input');
+    const customDivider     = document.getElementById('custom-divider');
+    const joinBtn           = document.getElementById('join-btn');
+    const joinError         = document.getElementById('join-error');
+    const messagesEl        = document.getElementById('messages');
+    const msgInput          = document.getElementById('msg-input');
+    const sendBtn           = document.getElementById('send-btn');
+    const typingBar         = document.getElementById('typing-bar');
+    const userList          = document.getElementById('user-list');
+    const onlineCount       = document.getElementById('online-count');
+    const sidebarRoomName   = document.getElementById('sidebar-room-name');
+    const headerRoomName    = document.getElementById('header-room-name');
+    const headerUserCount   = document.getElementById('header-user-count');
+    const leaveBtn          = document.getElementById('leave-btn');
+
+    // ──────────────────────────────────────────────
+    // Room select: show custom input
+    // ──────────────────────────────────────────────
+    roomSelect.addEventListener('change', () => {
+      const isCustom = roomSelect.value === 'custom';
+      customRoomInput.style.display = isCustom ? 'block' : 'none';
+      customDivider.style.display   = isCustom ? 'flex' : 'none';
+      if (isCustom) customRoomInput.focus();
+    });
+
+    // ──────────────────────────────────────────────
+    // Join
+    // ──────────────────────────────────────────────
+    joinBtn.addEventListener('click', attemptJoin);
+    usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptJoin(); });
+
+    function attemptJoin() {
+      const username = usernameInput.value.trim();
+      const room = roomSelect.value === 'custom'
+        ? customRoomInput.value.trim()
+        : roomSelect.value;
+
+      if (!username || !room) {
+        joinError.style.display = 'block';
+        return;
+      }
+
+      joinError.style.display = 'none';
+      socket.emit('join', { username, room });
+    }
+
+    // ──────────────────────────────────────────────
+    // Socket events — server → client
+    // ──────────────────────────────────────────────
+
+    // Successfully joined
+    socket.on('joined', ({ username, room, users }) => {
+      myUsername = username;
+      myRoom     = room;
+
+      joinOverlay.classList.add('hidden');
+      app.classList.add('visible');
+
+      sidebarRoomName.textContent = room;
+      headerRoomName.textContent  = room;
+
+      updateUserList(users);
+      msgInput.focus();
+    });
+
+    // Incoming message
+    socket.on('message', (msg) => {
+      appendMessage(msg);
+      scrollToBottom();
+    });
+
+    // Room user list update
+    socket.on('roomUsers', ({ users }) => {
+      updateUserList(users);
+    });
+
+    // Typing indicator
+    socket.on('typingUsers', (names) => {
+      const others = names.filter(n => n !== myUsername);
+      if (others.length === 0) {
+        typingBar.innerHTML = '';
+      } else {
+        const label = others.length === 1
+          ? `${others[0]} is typing`
+          : `${others.slice(0,-1).join(', ')} and ${others.at(-1)} are typing`;
+        typingBar.innerHTML = `${label}<span class="typing-dots"><span></span><span></span><span></span></span>`;
+      }
+    });
+
+    // ──────────────────────────────────────────────
+    // Render messages
+    // ──────────────────────────────────────────────
+    function appendMessage(msg) {
+      if (msg.type === 'system') {
+        const el = document.createElement('div');
+        el.className = 'msg-system';
+        el.textContent = msg.text;
+        messagesEl.appendChild(el);
+        return;
+      }
+
+      const isOwn = msg.username === myUsername;
+      const [fg, bg] = getAvatarColor(msg.username);
+      const initials = msg.username.substring(0, 2).toUpperCase();
+
+      const group = document.createElement('div');
+      group.className = `msg-group ${isOwn ? 'own' : 'other'}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'msg-meta';
+
+      const avatarEl = document.createElement('div');
+      avatarEl.className = 'user-avatar';
+      avatarEl.style.cssText = `background:${bg};color:${fg};`;
+      avatarEl.textContent = initials;
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'msg-username';
+      nameEl.style.color = fg;
+      nameEl.textContent = isOwn ? 'You' : msg.username;
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'msg-time';
+      timeEl.textContent = formatTime(msg.timestamp);
+
+      meta.append(avatarEl, nameEl, timeEl);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.textContent = msg.text;
+
+      group.append(meta, bubble);
+      messagesEl.appendChild(group);
+    }
+
+    function scrollToBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // ──────────────────────────────────────────────
+    // Update user list in sidebar
+    // ──────────────────────────────────────────────
+    function updateUserList(users) {
+      onlineCount.textContent = users.length;
+      headerUserCount.textContent = `${users.length} online`;
+
+      userList.innerHTML = '';
+      users.forEach(name => {
+        const [fg, bg] = getAvatarColor(name);
+        const initials = name.substring(0, 2).toUpperCase();
+
+        const item = document.createElement('div');
+        item.className = `user-item${name === myUsername ? ' is-me' : ''}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'user-avatar';
+        avatar.style.cssText = `background:${bg};color:${fg};`;
+        avatar.textContent = initials;
+
+        const label = document.createElement('span');
+        label.textContent = name === myUsername ? `${name} (you)` : name;
+
+        item.append(avatar, label);
+        userList.appendChild(item);
+      });
+    }
+
+    // ──────────────────────────────────────────────
+    // Send message
+    // ──────────────────────────────────────────────
+    sendBtn.addEventListener('click', sendMessage);
+
+    msgInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      socket.emit('chatMessage', text);
+      msgInput.value = '';
+      stopTyping();
+    }
+
+    // ──────────────────────────────────────────────
+    // Typing indicator — client → server
+    // ──────────────────────────────────────────────
+    msgInput.addEventListener('input', () => {
+      if (!isTyping) {
+        isTyping = true;
+        socket.emit('typing', true);
+      }
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(stopTyping, 1800);
+    });
+
+    function stopTyping() {
+      if (isTyping) {
+        isTyping = false;
+        socket.emit('typing', false);
+      }
+      clearTimeout(typingTimer);
+    }
+
+    // ──────────────────────────────────────────────
+    // Leave room — reload page
+    // ──────────────────────────────────────────────
+    leaveBtn.addEventListener('click', () => {
+      location.reload();
+    });
+
+    // ──────────────────────────────────────────────
+    // Focus username field on load
+    // ──────────────────────────────────────────────
+    window.addEventListener('load', () => usernameInput.focus());
+  </script>
+</body>
+</html>
