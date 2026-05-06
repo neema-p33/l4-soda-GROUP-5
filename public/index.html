@@ -1,77 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Chat App | Capstone Project</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>iChat · White Glass Design</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+    <div class="chat-app">
+        <div class="liquid-shimmer"></div>
+        <div class="app-inner">
+            <!-- Header Section -->
+            <div class="chat-header">
+                <div class="brand">
+                    <h1>iChat App</h1>
+                    <p>anonymous <span class="whisper">• name your style</span></p>
+                </div>
+                <div class="status-badge">
+                    ✨ live · glass
+                </div>
+            </div>
 
-<!-- Main App Wrapper -->
-<main class="chat-app">
+            <!-- NAME INPUT: allows user to write custom name -->
+            <div class="name-input-row">
+                <div class="name-input-wrapper">
+                    <span class="name-icon-label">✍️</span>
+                    <input type="text" id="userNameInput" class="name-input"
+                        placeholder="Your name (e.g., Emma, Leo, Luna)" maxlength="24" autocomplete="off">
+                    <span style="font-size:13px; opacity:0.5;">✨</span>
+                </div>
+                <div class="name-hint">
+                    ⚡ Type your name → messages show your identity
+                </div>
+            </div>
 
-    <!-- HEADER -->
-    <header class="chat-header">
+            <!-- Messages Container -->
+            <div class="messages-container" id="messageList">
+                <div class="message">
+                    <div class="message-sender">
+                        <span>☁️ iChat</span>
+                        <span class="name-icon">Glass</span>
+                    </div>
+                    <div class="message-bubble">
+                        Welcome to White Edition ✨ Write your name above and say hello.
+                    </div>
+                </div>
+                <div class="message">
+                    <div class="message-sender">
+                        <span>🕊️ system</span>
+                        <span class="name-icon">pure</span>
+                    </div>
+                    <div class="message-bubble">
+                        Liquid glass effect — light & bright design.
+                    </div>
+                </div>
+            </div>
 
-        <div class="user-info">
-            <div class="avatar" aria-label="User Avatar">👩</div>
+            <!-- Chat Input Footer -->
+            <div class="chat-footer">
+                <div class="input-group">
+                    <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+                    <button class="send-button" id="sendBtn">
+                        ▲
+                    </button>
+                </div>
+            </div>
 
-            <div class="user-details">
-                <h1 class="chat-title">Real-Time Chat</h1>
-                <p class="chat-status">● Online</p>
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span>🌊 connected · white glass</span>
+                <span class="clients-count" id="totalClients">Total clients: 2</span>
             </div>
         </div>
+    </div>
 
-    </header>
-
-    <!-- CHAT AREA -->
-    <section class="chat-body">
-
-        <!-- Typing indicator (backend controlled) -->
-        <div id="typing" class="typing-indicator" aria-live="polite"></div>
-
-        <!-- Messages container -->
-        <ul id="messages" class="messages-list" aria-live="polite">
-            <!-- Messages will be inserted here dynamically -->
-        </ul>
-
-    </section>
-
-    <!-- INPUT AREA -->
-    <footer class="chat-footer">
-
-        <form id="form" class="chat-form">
-
-            <!-- Message input -->
-            <input
-                id="input"
-                type="text"
-                class="chat-input"
-                placeholder="Type your message..."
-                autocomplete="off"
-                required
-                aria-label="Message input"
-            />
-
-            <!-- Send button -->
-            <button type="submit" class="send-btn" aria-label="Send message">
-                ➤
-            </button>
-
-        </form>
-
-    </footer>
-
-</main>
-
-<!-- Socket.IO (DO NOT REMOVE) -->
-<script src="/socket.io/socket.io.js"></script>
-
-<!-- App Logic -->
-<script src="script.js"></script>
-
+    <script src="script.js"></script>
 </body>
+
 </html>
